@@ -1,141 +1,148 @@
 import os
-import streamlit as st
 import base64
-from openai import OpenAI
-import openai
-#from PIL import Image
-import tensorflow as tf
-from PIL import Image, ImageOps
+import random
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+from PIL import Image
 import streamlit as st
 from streamlit_drawable_canvas import st_canvas
+import openai
+from openai import OpenAI
 
-Expert=" "
-profile_imgenh=" "
-    
+# 1. Configuración de la página e Interfaz Infantil
+st.set_page_config(page_title="¡Pequeños Artistas! 🎨✨", page_icon="🎨", layout="wide")
+
+# Frase motivadora al inicio
+st.markdown("""
+    <div style="background-color: #FFE66D; padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 20px;">
+        <h3 style="color: #2B2D42; margin:0;">🌈 "Todo niño es un artista. El secreto es mantener la magia cuando crecemos." — Pablo Picasso 🚀</h3>
+    </div>
+""", unsafe_allow_html=True)
+
+st.title("🌟 ¡El Lienzo Mágico de las Historias! 🎨")
+st.write("Dibuja lo que te imagines, ingresa tu clave y ¡la IA evaluará tu arte y te contará una historia genial!")
+
+# Function to encode image to base64
 def encode_image_to_base64(image_path):
     try:
         with open(image_path, "rb") as image_file:
-            encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
-            return encoded_image
+            return base64.b64encode(image_file.read()).decode("utf-8")
     except FileNotFoundError:
-        return "Error: La imagen no se encontró en la ruta especificada."
+        return None
 
-
-# Streamlit 
-st.set_page_config(page_title='Tablero Inteligente')
-st.title('Tablero Inteligente')
+# 2. Barra Lateral Infantil
 with st.sidebar:
-    st.subheader("Acerca de:")
-    st.subheader("En esta aplicación veremos la capacidad que ahora tiene una máquina de interpretar un boceto")
-st.subheader("Dibuja el boceto en el panel  y presiona el botón para analizarla")
+    st.header("🛠️ Tu Caja de Colores")
+    
+    drawing_mode = st.selectbox(
+        "Herramienta:",
+        ("freedraw", "line", "rect", "circle"),
+        format_func=lambda x: {
+            "freedraw": "✏️ Lápiz Mágico",
+            "line": "📏 Línea Recta",
+            "rect": "⬛ Cuadrado",
+            "circle": "🔴 Círculo"
+        }.get(x, x)
+    )
+    
+    stroke_width = st.slider('Grosor del pincel 🖌️', 2, 40, 12)
+    stroke_color = st.color_picker("Color de la pintura 🎨", "#FF6B6B")
+    bg_color = st.color_picker("Color de la hoja 📄", "#FFFFFF")
+    
+    st.divider()
+    st.subheader("🔑 Configuración")
+    ke = st.text_input('Ingresa tu API Key de OpenAI', type="password")
 
-# Add canvas component
-#bg_image = st.sidebar.file_uploader("Cargar Imagen:", type=["png", "jpg"])
-# Specify canvas parameters in application
-drawing_mode = "freedraw"
-stroke_width = st.sidebar.slider('Selecciona el ancho de línea', 1, 30, 5)
-#stroke_color = '#FFFFFF' # Set background color to white
-#bg_color = '#000000'
-stroke_color = "#000000" 
-bg_color = '#FFFFFF'
-#realtime_update = st.sidebar.checkbox("Update in realtime", True)
-
-
-# Create a canvas component
-canvas_result = st_canvas(
-    fill_color="rgba(255, 165, 0, 0.3)",  # Fixed fill color with some opacity
-    stroke_width=stroke_width,
-    stroke_color=stroke_color,
-    background_color=bg_color,
-    height=300,
-    width=400,
-    #background_image= None #Image.open(bg_image) if bg_image else None,
-    drawing_mode=drawing_mode,
-    key="canvas",
-)
-
-ke = st.text_input('Ingresa tu Clave')
-#os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
+# Asignar API Key
 os.environ['OPENAI_API_KEY'] = ke
+api_key = os.environ.get('OPENAI_API_KEY')
 
+# 3. Disposición Principal
+col1, col2 = st.columns([3, 2])
 
-# Retrieve the OpenAI API Key from secrets
-api_key = os.environ['OPENAI_API_KEY']
+with col1:
+    st.subheader("🖼️ ¡Dibuja aquí tu obra de arte!")
+    canvas_result = st_canvas(
+        fill_color="rgba(255, 230, 109, 0.4)",
+        stroke_width=stroke_width,
+        stroke_color=stroke_color,
+        background_color=bg_color,
+        height=350,
+        width=500,
+        drawing_mode=drawing_mode,
+        key="canvas_infantil_key",
+    )
+    
+    analyze_button = st.button("🚀 ¡Analizar mi dibujo y contar historia!", type="primary", use_container_width=True)
 
-# Initialize the OpenAI client with the API key
-client = OpenAI(api_key=api_key)
-
-analyze_button = st.button("Analiza la imagen", type="secondary")
-
-# Check if an image has been uploaded, if the API key is available, and if the button has been pressed
-if canvas_result.image_data is not None and api_key and analyze_button:
-
-    with st.spinner("Analizando ..."):
-        # Encode the image
-        input_numpy_array = np.array(canvas_result.image_data)
-        input_image = Image.fromarray(input_numpy_array.astype('uint8'),'RGBA')
-        input_image.save('img.png')
-        
-      # Codificar la imagen en base64
- 
-        base64_image = encode_image_to_base64("img.png")
+with col2:
+    st.subheader("⭐ La Magia del Cuento")
+    
+    if analyze_button:
+        if not api_key:
+            st.warning("🔑 Por favor ingresa tu OpenAI API Key en la barra lateral para continuar.")
+        else:
+            # Validación segura para evitar el RuntimeError del lienzo
+            has_drawings = False
+            img_data = None
             
-        prompt_text = (f"Describe in spanish briefly the image")
-    
-      # Create the payload for the completion request
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt_text},
-                    {
-                        "type": "image_url",
-                        "image_url":f"data:image/png;base64,{base64_image}",
-                    },
-                ],
-            }
-        ]
-    
-        # Make the request to the OpenAI API
-        try:
-            full_response = ""
-            message_placeholder = st.empty()
-            response = openai.chat.completions.create(
-              model= "gpt-4o-mini",  #o1-preview ,gpt-4o-mini
-              messages=[
-                {
-                   "role": "user",
-                   "content": [
-                     {"type": "text", "text": prompt_text},
-                     {
-                       "type": "image_url",
-                       "image_url": {
-                         "url": f"data:image/png;base64,{base64_image}",
-                       },
-                     },
-                   ],
-                  }
-                ],
-              max_tokens=500,
-              )
-            #response.choices[0].message.content
-            if response.choices[0].message.content is not None:
-                    full_response += response.choices[0].message.content
-                    message_placeholder.markdown(full_response + "▌")
-            # Final update to placeholder after the stream ends
-            message_placeholder.markdown(full_response)
-            if Expert== profile_imgenh:
-               st.session_state.mi_respuesta= response.choices[0].message.content #full_response 
-    
-            # Display the response in the app
-            #st.write(response.choices[0])
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-else:
-    # Warnings for user action required
+            if canvas_result is not None:
+                if canvas_result.json_data is not None:
+                    objects = canvas_result.json_data.get("objects", [])
+                    if len(objects) > 0:
+                        has_drawings = True
+                try:
+                    img_data = canvas_result.image_data
+                except Exception:
+                    img_data = None
 
-    if not api_key:
-        st.warning("Por favor ingresa tu API key.")
+            if has_drawings or (img_data is not None and np.any(img_data)):
+                with st.spinner("🧙‍♂️ El mago de los cuentos está observando tu dibujo..."):
+                    try:
+                        # Guardar imagen temporalmente
+                        input_numpy_array = np.array(canvas_result.image_data)
+                        input_image = Image.fromarray(input_numpy_array.astype('uint8'), 'RGBA').convert('RGB')
+                        input_image.save('img.png')
+                        
+                        base64_image = encode_image_to_base64("img.png")
+                        
+                        # Prompt infantil ajustado con sistema de calificación
+                        prompt_text = (
+                            "Eres un narrador amable, divertido y entusiasta para niños. "
+                            "Observa este dibujo infantil y responde en español con la siguiente estructura: "
+                            "1. Dales una calificación muy positiva en estrellas ⭐ (ejemplo: ⭐⭐⭐⭐⭐ / 5 estrellas). "
+                            "2. Dales un título divertido a su medalla de artista (ej. ¡Medalla de Gran Creador de Dragones!). "
+                            "3. Describe de forma corta y divertida qué ves en el dibujo. "
+                            "4. Escribe un cuento mágico muy corto (máximo 2 párrafos) basado en lo que dibujaron."
+                        )
+                        
+                        # Llamada a la API de OpenAI
+                        client = OpenAI(api_key=api_key)
+                        response = client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=[
+                                {
+                                    "role": "user",
+                                    "content": [
+                                        {"type": "text", "text": prompt_text},
+                                        {
+                                            "type": "image_url",
+                                            "image_url": {
+                                                "url": f"data:image/png;base64,{base64_image}",
+                                            },
+                                        },
+                                    ],
+                                }
+                            ],
+                            max_tokens=600,
+                        )
+                        
+                        resultado = response.choices[0].message.content
+                        
+                        st.balloons()
+                        st.success("¡Tu cuento está listo!")
+                        st.markdown(resultado)
+
+                    except Exception as e:
+                        st.error(f"¡Ups! Ocurrió un error al analizar el dibujo: {e}")
+            else:
+                st.warning("🎨 ¡El lienzo está vacío! Dibuja algo antes de presionar el botón.")
