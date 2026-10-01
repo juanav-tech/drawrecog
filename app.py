@@ -9,15 +9,21 @@ from openai import OpenAI
 # 1. Configuración de la página con tema infantil
 st.set_page_config(page_title="¡Pequeños Artistas! 🎨✨", page_icon="🎨", layout="centered")
 
-# Estilos CSS personalizados (Fondo azul pastel y tarjetas blancas redondeadas)
+# Estilos CSS personalizados (Fondo azul oscuro con contraste para texto blanco)
 st.markdown("""
     <style>
-    /* Fondo principal de la app */
+    /* Fondo principal azul oscuro */
     .stApp {
-        background-color: #E0F7FA;
+        background-color: #0F172A;
+        color: #F8FAFC;
     }
     
-    /* Contenedores tipo tarjeta */
+    /* Cambiar el color de los textos predeterminados a blanco */
+    h1, h2, h3, h4, h5, h6, p, label, div {
+        color: #F8FAFC !important;
+    }
+    
+    /* Contenedores tipo tarjeta en fondo azul violeta oscuro */
     div[data-testid="stVerticalBlock"] > div {
         border-radius: 20px;
     }
@@ -25,7 +31,7 @@ st.markdown("""
     /* Botón principal infantil */
     .stButton>button {
         background-color: #FF6B6B;
-        color: white;
+        color: white !important;
         font-size: 18px;
         font-weight: bold;
         border-radius: 12px;
@@ -35,7 +41,7 @@ st.markdown("""
     }
     .stButton>button:hover {
         background-color: #FF5252;
-        color: white;
+        color: white !important;
         transform: scale(1.02);
     }
     </style>
@@ -43,8 +49,8 @@ st.markdown("""
 
 # 2. Frase motivadora e Encabezado
 st.markdown("""
-    <div style="background: linear-gradient(135deg, #FFE66D, #FFD166); padding: 18px; border-radius: 20px; text-align: center; margin-bottom: 25px; box-shadow: 0px 4px 10px rgba(0,0,0,0.05);">
-        <h3 style="color: #2B2D42; margin:0; font-family: 'Comic Sans MS', sans-serif;">🌈 "Todo niño es un artista. El secreto es mantener la magia cuando crecemos." — Pablo Picasso 🚀</h3>
+    <div style="background: linear-gradient(135deg, #FFE66D, #FFD166); padding: 18px; border-radius: 20px; text-align: center; margin-bottom: 25px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3);">
+        <h3 style="color: #2B2D42 !important; margin:0; font-family: 'Comic Sans MS', sans-serif;">🌈 "Todo niño es un artista. El secreto es mantener la magia cuando crecemos." — Pablo Picasso 🚀</h3>
     </div>
 """, unsafe_allow_html=True)
 
@@ -80,7 +86,7 @@ with st.sidebar:
 
 # 4. Sección Principal (Layout Centrado en Pasos)
 
-# PASO 1: Campo para la Clave API (Bien visible)
+# PASO 1: Campo para la Clave API
 st.markdown("### 🔑 Paso 1: Ingresa tu Clave Mágica (OpenAI API Key)")
 ke = st.text_input('Ingresa tu API Key para activar la magia:', type="password", placeholder="sk-...", key="input_api_key")
 
@@ -137,13 +143,14 @@ if analyze_button:
                     
                     base64_image = encode_image_to_base64("img.png")
                     
+                    # Prompt formateado asegurando compatibilidad UTF-8
                     prompt_text = (
-                        "Eres un narrador amable, divertido y entusiasta para niños. "
-                        "Observa este dibujo infantil y responde en español con la siguiente estructura: "
-                        "1. Dales una calificación muy positiva en estrellas ⭐ (ejemplo: ⭐⭐⭐⭐⭐ / 5 estrellas). "
-                        "2. Dales un título divertido a su medalla de artista (ej. ¡Medalla de Gran Creador de Dragones!). "
-                        "3. Describe de forma corta y divertida qué ves en el dibujo. "
-                        "4. Escribe un cuento mágico corto (máximo 2 párrafos) adaptado para niños basado en lo que dibujaron."
+                        "Eres un narrador amable, divertido y entusiasta para ninos. "
+                        "Observa este dibujo infantil y responde en espanol con la siguiente estructura: "
+                        "1. Dales una calificacion muy positiva en estrellas (ejemplo: 5 / 5 estrellas). "
+                        "2. Dales un titulo divertido a su medalla de artista (ej. Medalla de Gran Creador de Dragones). "
+                        "3. Describe de forma corta y divertida que ves en el dibujo. "
+                        "4. Escribe un cuento magico corto (maximo 2 parrafos) adaptado para ninos basado en lo que dibujaron."
                     )
                     
                     client = OpenAI(api_key=api_key)
@@ -171,9 +178,9 @@ if analyze_button:
                     st.balloons()
                     st.success("¡Tu cuento y calificación están listos!")
                     
-                    # Contenedor para mostrar la respuesta
+                    # Contenedor visual para mostrar el resultado
                     st.markdown(f"""
-                        <div style="background-color: #FFFFFF; padding: 20px; border-radius: 15px; border: 2px solid #B2EBF2;">
+                        <div style="background-color: #1E293B; padding: 25px; border-radius: 15px; border: 2px solid #38BDF8; color: #F8FAFC;">
                             {resultado}
                         </div>
                     """, unsafe_allow_html=True)
